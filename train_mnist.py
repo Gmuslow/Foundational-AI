@@ -121,7 +121,7 @@ multi_layer_perceptron = mlp.MultilayerPerceptron(layers,
     verbose=False)
 
 loss_function = mlp.CrossEntropy()
-multi_layer_perceptron.train(
+train_losses, val_losses = multi_layer_perceptron.train(
     x_train_flattened, 
     y_train_one_hot, 
     x_val_flattened, 
@@ -131,6 +131,17 @@ multi_layer_perceptron.train(
     batch_size=32,
     epochs=50
 )
+
+# Plot the training and validation losses
+plt.figure(figsize=(10, 5))
+plt.plot(train_losses, label='Training Loss')
+plt.plot(val_losses, label='Validation Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.title('Training and Validation Losses')
+plt.legend()
+plt.show()
+plt.savefig('training_validation_losses_mnist.png')
 
 num_right = 0
 # Evaluate the multi_layer_perceptron using the testing set
@@ -145,3 +156,19 @@ accuracy = num_right / len(true_labels)
 print(f"Number of correct predictions: {num_right}")
 print(f"Total number of predictions: {len(true_labels)}")
 print(f"Accuracy: {accuracy * 100:.2f}%")
+
+# Select 1 for each class (0-9) from testing and show these samples (images) along with the predicted class for each.
+selected_images = []
+selected_titles = []
+selected_classes = set()
+
+for i in range(len(x_test)):
+    if len(selected_classes) == 10:
+        break
+    predicted_class = predicted_labels[i]
+    if predicted_class not in selected_classes:
+        selected_images.append(x_test[i])
+        selected_titles.append(f"Predicted: {predicted_class}")
+        selected_classes.add(predicted_class)
+
+show_images(selected_images, selected_titles)

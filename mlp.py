@@ -222,17 +222,18 @@ class Layer:
         d_raw_wrt_input = self.W
         if self.verbose and self.loss_grads is not None:
             print(f"d_loss_wrt_out: {self.loss_grads.shape}\n d_out_wrt_raw: {d_out_wrt_raw.shape}")
+
+        #take care of the math issues for a softmax derivative
         if isinstance(self.activation_function, Softmax):
-            # Choose the incoming gradient:
-            # For the last layer, use the loss gradients; otherwise, use the delta passed from above.
+            
             incoming_delta = self.loss_grads if self.is_last else delta
-            # Compute the Jacobian for each sample (shape: (batch, q, q))
+            
             jacobian = self.activation_function.derivative(z)
-            # Perform batch matrix multiplication: for each sample, new_delta = Jacobian dot incoming_delta.
+            
             hadamard = np.einsum('bij,bi->bj', jacobian, incoming_delta)
         else:
             if self.is_last:
-                d_loss_wrt_out = self.loss_grads#self.loss_function.derivative(self.y_true, o)
+                d_loss_wrt_out = self.loss_grads
                 hadamard = np.multiply(d_loss_wrt_out, d_out_wrt_raw)
             else:
                 hadamard = np.multiply(delta, d_out_wrt_raw)
@@ -381,8 +382,6 @@ class MultilayerPerceptron:
                         print("Last layer is softmax. Doing the easy calculation.")
                     loss_gradients = -(batch_output - batch_y)
                 weight_gradients, bias_gradients = self.backward(loss_gradients, batch_x, layer_inputs)
-                #for j, grad in enumerate(weight_gradients):
-                    #print(f"Shape of layer {j+1} gradient: {grad.shape}")
                 
                 #perform weight and bias updates
                 for j, layer in enumerate(reversed(self.layers)):
@@ -399,17 +398,7 @@ class MultilayerPerceptron:
                     else:
                         print(f"Shape mismatch in layer {len(self.layers)-j }: layer.b.shape = {layer.b.shape}, bias_gradients[{len(self.layers)-j}].shape = {bias_gradients[j].shape}")
                         assert 1 == 0
-                    # # For clarity, compute the averaged gradients over the batch:
-                    # gW = weight_gradients[-1 - j] / float(batch_size)
-                    # gb = bias_gradients[-1 - j] / float(batch_size)
                     
-                    # # Update the moving averages (caches) of squared gradients:
-                    # layer.cache_W = decay_rate * layer.cache_W + (1 - decay_rate) * (gW ** 2)
-                    # layer.cache_b = decay_rate * layer.cache_b + (1 - decay_rate) * (gb ** 2)
-                    
-                    # # Update the weights and biases using the RMSProp formula:
-                    # layer.W += learning_rate * gW / (np.sqrt(layer.cache_W) + epsilon)
-                    # layer.b += learning_rate * gb / (np.sqrt(layer.cache_b) + epsilon)
                 current_losses.append(batch_losses)
         
             avg_train_loss = np.mean(current_losses)
