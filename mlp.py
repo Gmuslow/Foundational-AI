@@ -412,9 +412,9 @@ class MultilayerPerceptron:
             #compute avg validation loss
             val_losses = []
             for v in range(len(val_x)):
-                val_loss = loss_func.loss(self.forward(val_x[v]), val_y[v])
+                val_loss = loss_func.loss(val_y[v], self.forward(val_x[v]))
                 val_losses.append(val_loss)
-            avg_val_loss = np.average(val_losses)
+            avg_val_loss = np.mean(val_losses)
             print(f"Validation loss for epoch {i}: {avg_val_loss}")
             validation_losses.append(avg_val_loss)
 
