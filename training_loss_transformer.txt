@@ -1,0 +1,22 @@
+Epoch 1/30, Training Loss: 0.2376, Validation Loss: 0.0778
+Model improved and saved.
+Epoch 2/30, Training Loss: 0.0759, Validation Loss: 0.0770
+Model improved and saved.
+Epoch 3/30, Training Loss: 0.0510, Validation Loss: 0.0448
+Model improved and saved.
+Epoch 4/30, Training Loss: 0.0429, Validation Loss: 0.0432
+Model improved and saved.
+Epoch 5/30, Training Loss: 0.0416, Validation Loss: 0.0427
+Model improved and saved.
+Epoch 6/30, Training Loss: 0.0410, Validation Loss: 0.0427
+Model improved and saved.
+Epoch 7/30, Training Loss: 0.0407, Validation Loss: 0.0429
+Epoch 8/30, Training Loss: 0.0404, Validation Loss: 0.0421
+Model improved and saved.
+Epoch 9/30, Training Loss: 0.0402, Validation Loss: 0.0422
+Epoch 10/30, Training Loss: 0.0401, Validation Loss: 0.0422
+Epoch 00011: reducing learning rate of group 0 to 5.0000e-04.
+Epoch 11/30, Training Loss: 0.0645, Validation Loss: 0.0781
+Epoch 12/30, Training Loss: 0.0668, Validation Loss: 0.0453
+Epoch 13/30, Training Loss: 0.0421, Validation Loss: 0.0434
+Early stopping triggered
