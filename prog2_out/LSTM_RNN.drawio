@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" version="26.2.12">
+  <diagram name="Page-1" id="GbdN7Nx21wVoEB9Do9-D">
+    <mxGraphModel dx="1044" dy="561" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.55;exitY=0.95;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="GxA5CSho9K0tE6kDnnmF-1" target="GxA5CSho9K0tE6kDnnmF-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-1" value="Input Prompt" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="60" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="GxA5CSho9K0tE6kDnnmF-2" target="GxA5CSho9K0tE6kDnnmF-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-2" value="Tokenizer" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="170" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="GxA5CSho9K0tE6kDnnmF-4" target="GxA5CSho9K0tE6kDnnmF-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="GxA5CSho9K0tE6kDnnmF-4" target="GxA5CSho9K0tE6kDnnmF-21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-4" value="Embedding Layer" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="270" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="GxA5CSho9K0tE6kDnnmF-5" target="GxA5CSho9K0tE6kDnnmF-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-5" value="LSTM/RNN/&lt;div&gt;Transformer Layer 1&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="370" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-8" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="470" as="sourcePoint" />
+            <mxPoint x="440" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="GxA5CSho9K0tE6kDnnmF-9" target="GxA5CSho9K0tE6kDnnmF-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-9" value="LSTM/RNN/&lt;div&gt;Transformer Layer N&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="500" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-11" value="Fully Connected&lt;div&gt;Layer&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="510" y="500" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-13" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="570" y="500" as="sourcePoint" />
+            <mxPoint x="570" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="GxA5CSho9K0tE6kDnnmF-14" target="GxA5CSho9K0tE6kDnnmF-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-14" value="Output Logits" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="530" y="330" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-15" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="610" y="370" as="sourcePoint" />
+            <mxPoint x="700" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-16" value="Compute Loss for&lt;div&gt;Backprop&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="330" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="GxA5CSho9K0tE6kDnnmF-17" target="GxA5CSho9K0tE6kDnnmF-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-17" value="Softmax + Sample" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="530" y="240" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-20" value="Append Token" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="440" y="250" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="GxA5CSho9K0tE6kDnnmF-21" target="GxA5CSho9K0tE6kDnnmF-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-21" value="Positional Encoder Layer" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="330" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-24" value="If Transformer" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="220" y="268" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="GxA5CSho9K0tE6kDnnmF-25" value="Else" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="390" y="338" width="50" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

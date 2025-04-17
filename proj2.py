@@ -1,6 +1,8 @@
+#!pip install torch
 import sentencepiece as spm
 import os
 import pickle
+
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -12,38 +14,104 @@ from nltk.translate.bleu_score import sentence_bleu
 import math
 from torch.utils.data import random_split
 import matplotlib.pyplot as plt
+import random
+from sklearn.model_selection import train_test_split
+import numpy as np
+import argparse
 
-def create_tokenizer(input_dir :str):
+def create_tokenizer(input_dir :str, output_path :str):
     """Creates a tokenizer using texts from input_dir and saves it to tokenizer.pkl"""
-    # Define the input directory and output model prefix
+    
     model_prefix = "bpe_tokenizer"
-    vocab_size = 10000  # You can adjust this based on your needs
+    vocab_size = 10000  
 
-    # Collect all text files in the input directory
     input_files = [os.path.join(input_dir, f) for f in os.listdir(input_dir) if f.endswith('.txt')]
 
-    # Join file paths into a single string separated by commas
     input_files_str = ",".join(input_files)
 
     
-    # Train the BPE tokenizer
+   
     spm.SentencePieceTrainer.Train(
         input=input_files_str,
         model_prefix=model_prefix,
         vocab_size=vocab_size,
         model_type="bpe", 
-        user_defined_symbols="<eos>,<pad>"
+        user_defined_symbols="<pad>"
     )
 
-    # Load the trained tokenizer model
+   
     tokenizer = spm.SentencePieceProcessor()
     tokenizer.load(f"{model_prefix}.model")
 
     
-    with open(r"C:\Users\muslo\Documents\Homework\Foundational AI\Foundational-AI\tokenizer.pkl", "wb") as f:
+    with open(output_path, "wb") as f:
         pickle.dump(tokenizer, f)
     return tokenizer
 
+def make_jsonl_from_txt_dir(input_dir, tokenizer_path, output_dir, 
+                                       min_len=2, max_len=250, test_ratio=0.2, 
+                                       seed=42):
+    # Load trained tokenizer
+    with open(tokenizer_path, "rb") as f:
+        tokenizer = pickle.load(f)
+
+    examples = []
+
+    for file_name in os.listdir(input_dir):
+        if file_name.endswith(".txt"):
+            with open(os.path.join(input_dir, file_name), "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    # Tokenize the line
+                    token_ids = tokenizer.encode(line, out_type=int)
+
+                    if len(token_ids) < min_len + 1:
+                        continue
+                    if len(token_ids) > max_len:
+                        token_ids = token_ids[:max_len]
+
+                    # Random split point for next-token prediction
+                    split_point = random.randint(min_len, len(token_ids) - 1)
+                    for split_point in range(min_len, len(token_ids) - 2, 1):
+                        
+                        prompt_ids = token_ids[:split_point]
+                        completion_ids = token_ids[split_point:split_point + 1]
+
+                        prompt_text = tokenizer.decode(prompt_ids)
+                        completion_text = tokenizer.decode(completion_ids)
+                        if completion_text.strip() == "":
+                            continue
+
+                        examples.append({
+                            "prompt": prompt_text,
+                            "completion": completion_text
+                        })
+
+    # Split into train/test
+    train_data, test_data = train_test_split(
+        examples, test_size=test_ratio, random_state=seed
+    )
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    train_path = os.path.join(output_dir, "train.jsonl")
+    test_path = os.path.join(output_dir, "test.jsonl")
+
+    with open(train_path, "w", encoding="utf-8") as f:
+        for ex in train_data:
+            json.dump(ex, f)
+            f.write("\n")
+
+    with open(test_path, "w", encoding="utf-8") as f:
+        for ex in test_data:
+            json.dump(ex, f)
+            f.write("\n")
+
+    print(f"Saved {len(train_data)} training examples to {train_path}")
+    print(f"Saved {len(test_data)} testing examples to {test_path}")
 
 class Prog2Model(nn.Module):
     def __init__(self, model_option: str, num_layers: int, tokenizer: spm.SentencePieceProcessor):
@@ -53,8 +121,11 @@ class Prog2Model(nn.Module):
         self.vocab_size = 10000
         self.tokenizer = tokenizer
 
-        self.dropout = 0.2
-        model_dim = 128
+        self.dropout = 0.4
+        
+        model_dim = 256
+        
+        self.positional_encoding = PositionalEncoding(d_model = model_dim)
 
         # Define the embedding layer
         self.embedding_layer = nn.Embedding(num_embeddings=self.vocab_size, embedding_dim=model_dim)
@@ -78,7 +149,12 @@ class Prog2Model(nn.Module):
 
     def forward(self, tokens, temperature=1.0, train_mode=True):
         # Embed the tokens
+        
+        
         embedded_tokens = self.embedding_layer(tokens)
+        
+        if self.model_option == "Transformer":
+            embedded_tokens = self.positional_encoding(embedded_tokens)
 
         embedded_tokens = nn.functional.dropout(embedded_tokens, p=self.dropout, training=train_mode)
 
@@ -107,14 +183,25 @@ class Prog2Model(nn.Module):
                 break
         return tokens
     
-    def sample_next_token(self, probabilities, k=10):
-        # Top-k sampling: select only the top k tokens and sample randomly from them
-        topk_prob, topk_indices = torch.topk(probabilities, k)
-        topk_prob = topk_prob / topk_prob.sum()  # Normalize
-        chosen = torch.multinomial(topk_prob, 1)
-        return topk_indices[chosen].item()
         
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, dropout=0.1, max_len=250):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
 
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-torch.log(torch.tensor(10000.0)) / d_model))
+
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+
+        pe = pe.unsqueeze(0)  # (1, max_len, d_model)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        x = x + self.pe[:, :x.size(1), :]
+        return self.dropout(x)
 
 # Custom Dataset for JSONL data
 class TextCompletionDataset(Dataset):
@@ -151,7 +238,7 @@ class TextCompletionDataset(Dataset):
 
 
 # Training function with early stopping and learning rate scheduler
-def train_model(model, train_dataloader, val_dataloader, optimizer, criterion, device, epochs=30, patience=15):
+def train_model(model, train_dataloader, val_dataloader, optimizer, criterion, device, epochs=30, patience=5):
     model.train()
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2, verbose=True)
     best_val_loss = float('inf')
@@ -161,32 +248,43 @@ def train_model(model, train_dataloader, val_dataloader, optimizer, criterion, d
     val_losses = []
 
     for epoch in range(epochs):
+        print("Starting epoch ", epoch)
         total_loss = 0
         model.train()
 
+        inc = 1000
         # Training loop
-        for batch in train_dataloader:
+        for i, batch in enumerate(train_dataloader):
             input_ids, target_ids = batch
             # print(batch)
             input_ids, target_ids = input_ids.to(device), target_ids.to(device)
 
             # Forward pass
             optimizer.zero_grad()
-            outputs = model(input_ids)
+            # Find the actual length of each prompt (before padding)
+            lengths = (input_ids != 0).sum(dim=1)  # [batch_size]
 
-                # Reshape outputs and targets for CrossEntropyLoss
-            outputs = outputs.view(-1, model.vocab_size)  # Shape: (batch_size * sequence_length, vocab_size)
-            target_ids = target_ids.view(-1)  # Shape: (batch_size * sequence_length)
+            # Forward pass
+            outputs = model(input_ids)  # [batch_size, seq_len, vocab_size]
 
+            # Gather the logits at the last prompt token position
+            batch_indices = torch.arange(input_ids.size(0), device=device)
+            last_token_logits = outputs[batch_indices, lengths - 1, :]  # [batch_size, vocab_size]
 
-            # Compute loss
-            loss = criterion(outputs, target_ids)
-            total_loss += loss.item()
+            # Use the first token of the target (single-token completion)
+            target_ids = target_ids[:, 0]  # [batch_size]
+
+            loss = criterion(last_token_logits, target_ids)
+            total_loss += loss
 
             # Backward pass and optimization
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0) #handle exploding gradient
             optimizer.step()
+            
+            if i % inc == 0:
+                print(f"Finished batch {i} / {len(train_dataloader)}")
+            
         
         avg_train_loss = total_loss / len(train_dataloader)
         train_losses.append(avg_train_loss)
@@ -199,15 +297,19 @@ def train_model(model, train_dataloader, val_dataloader, optimizer, criterion, d
                 input_ids, target_ids = batch
                 input_ids, target_ids = input_ids.to(device), target_ids.to(device)
 
-                outputs = model(input_ids)
-                
-                # Reshape outputs and targets for CrossEntropyLoss
-                outputs = outputs.view(-1, model.vocab_size)  # Shape: (batch_size * sequence_length, vocab_size)
-                target_ids = target_ids.view(-1)  # Shape: (batch_size * sequence_length)
+                lengths = (input_ids != 0).sum(dim=1)  # [batch_size]
 
+                # Forward pass
+                outputs = model(input_ids)  # [batch_size, seq_len, vocab_size]
 
-                # Compute loss
-                loss = criterion(outputs, target_ids)
+                # Gather the logits at the last prompt token position
+                batch_indices = torch.arange(input_ids.size(0), device=device)
+                last_token_logits = outputs[batch_indices, lengths - 1, :]  # [batch_size, vocab_size]
+
+                # Use the first token of the target (single-token completion)
+                target_ids = target_ids[:, 0]  # [batch_size]
+
+                loss = criterion(last_token_logits, target_ids)
                 
                 val_loss += loss.item()
 
@@ -230,16 +332,19 @@ def train_model(model, train_dataloader, val_dataloader, optimizer, criterion, d
                 break
     
     # Plot the training and validation loss curves
-    plt.figure(figsize=(10, 6))
-    plt.plot(train_losses, label="Training Loss")
-    plt.plot(val_losses, label="Validation Loss")
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.title("Training and Validation Loss Curves")
-    plt.legend()
-    plt.grid()
-    plt.savefig(f"loss_curves_{model.model_option}.png")  # Save the plot as an image
-    plt.show()
+    try:
+        plt.figure(figsize=(10, 6))
+        plt.plot(np.array(train_losses), label="Training Loss")
+        plt.plot(np.array(val_losses), label="Validation Loss")
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.title("Training and Validation Loss Curves")
+        plt.legend()
+        plt.grid()
+        plt.savefig(f"loss_curves_{model.model_option}.png")  # Save the plot as an image
+        plt.show()
+    except Exception as e:
+        print(f"failed to plot loss: {e}")
 
 def compute_bleu_score(model, dataloader, tokenizer, device):
     model.eval()
@@ -295,28 +400,71 @@ def compute_perplexity(model, dataloader, criterion, device):
 
 # Main script
 if __name__ == "__main__":
+    print("Starting...")
 
     #create tokenizer
-    #create_tokenizer(r"C:\Users\muslo\Documents\Homework\Foundational AI\CSC7809_FoundationModels\Project2\data\raw")
+    
     # Load the tokenizer
+    # Parse script arguments
+    parser = argparse.ArgumentParser(description="Train and evaluate a text completion model.")
+    parser.add_argument("--tokenizer_path", type=str, required=True, help="Path to the tokenizer file.")
+    parser.add_argument("--data_dir", type=str, required=True, help="Directory containing the raw text data.")
+    parser.add_argument("--output_dir", type=str, required=True, help="Directory to save processed data and models.")
+    parser.add_argument("--model_option", type=str, choices=["RNN", "LSTM", "Transformer"], default="LSTM", help="Model type to use.")
+    parser.add_argument("--num_layers", type=int, default=8, help="Number of layers in the model.")
+    parser.add_argument("--max_seq_length", type=int, default=250, help="Maximum sequence length.")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size for training and evaluation.")
+    parser.add_argument("--epochs", type=int, default=30, help="Number of training epochs.")
+    parser.add_argument("--learning_rate", type=float, default=0.0001, help="Learning rate for the optimizer.")
+    parser.add_argument("--weight_decay", type=float, default=1e-5, help="Weight decay for the optimizer.")
+    parser.add_argument("--patience", type=int, default=5, help="Patience for early stopping.")
+    parser.add_argument("--test_only", action="store_true", help="Run evaluation only without training.")
+    parser.add_argument("--recreate_data_and_tokenizer", action="store_true", help="Recreate the tokenizer and data files.")
+    args = parser.parse_args()
 
-    with open(r"C:\Users\muslo\Documents\Homework\Foundational AI\Foundational-AI\tokenizer.pkl", "rb") as f:
+    # Assign parsed arguments to variables
+    tokenizer_path = args.tokenizer_path
+    data_dir = args.data_dir
+    output_dir = args.output_dir
+    model_option = args.model_option
+    num_layers = args.num_layers
+    max_seq_length = args.max_seq_length
+    batch_size = args.batch_size
+    epochs = args.epochs
+    learning_rate = args.learning_rate
+    weight_decay = args.weight_decay
+    patience = args.patience
+    test_only = args.test_only
+    divider = args.divider
+    recreate_data_and_tokenizer = args.recreate_data_and_tokenizer
+    # tokenizer_path = "/home/gmuslow/prog2/Foundational-AI/tokenizer.pkl"
+    # all_data_path = "/home/gmuslow/prog2/"
+    train_path = "/home/gmuslow/prog2/train.jsonl"
+    test_path = "/home/gmuslow/prog2/test.jsonl"
+    
+    if recreate_data_and_tokenizer:
+        create_tokenizer("/home/gmuslow/prog2/CSC7809_FoundationModels/Project2/data/raw", tokenizer_path)
+        make_jsonl_from_txt_dir("/home/gmuslow/prog2/CSC7809_FoundationModels/Project2/data/raw", tokenizer_path, data_dir)
+
+    
+    with open(tokenizer_path, "rb") as f:
         tokenizer = pickle.load(f)
 
     
-    max_seq_length = 250
-    model_option = "Transformer"  # Choose from "RNN", "LSTM", or "Transformer"
-    num_layers = 2
 
-    testonly = False
+    
+    divider = 3
 
-    if not testonly:
+    if not test_only:
         # Load the dataset
         train_dataset = TextCompletionDataset(
-            file_path=r"C:\Users\muslo\Documents\Homework\Foundational AI\CSC7809_FoundationModels\Project2\data\train.jsonl",
+            file_path=train_path,
             tokenizer=tokenizer,
             max_seq_len=max_seq_length
         )
+        
+        subset_size = len(train_dataset) // divider
+        train_dataset = torch.utils.data.Subset(train_dataset, range(subset_size))
         
         # Split the dataset into training and validation sets (80-20 split)
         train_size = int(0.8 * len(train_dataset))
@@ -324,8 +472,8 @@ if __name__ == "__main__":
         train_subset, val_subset = random_split(train_dataset, [train_size, val_size])
 
         # Create DataLoaders for training and validation sets
-        train_dataloader = DataLoader(train_subset, batch_size=128, shuffle=True)
-        val_dataloader = DataLoader(val_subset, batch_size=128, shuffle=False)
+        train_dataloader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
+        val_dataloader = DataLoader(val_subset, batch_size=batch_size, shuffle=False)
 
         
         # Initialize the model
@@ -334,7 +482,7 @@ if __name__ == "__main__":
         model = Prog2Model(model_option=model_option, num_layers=num_layers, tokenizer=tokenizer).to(device)
 
         # Define the optimizer and loss function
-        optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=1e-5)
+        optimizer = optim.AdamW(model.parameters(), lr=0.0001, weight_decay=1e-5)
         criterion = nn.CrossEntropyLoss(ignore_index=0)  # Ignore padding index
 
         # Train the model
@@ -351,11 +499,15 @@ if __name__ == "__main__":
 
     # Load the test dataset
     test_dataset = TextCompletionDataset(
-        file_path=r"C:\Users\muslo\Documents\Homework\Foundational AI\CSC7809_FoundationModels\Project2\data\test.jsonl",
+        file_path=test_path,
         tokenizer=tokenizer,
         max_seq_len=max_seq_length
     )
-    test_dataloader = DataLoader(test_dataset, batch_size=128, shuffle=False)
+    
+    subset_size = len(test_dataset) // divider
+    test_dataset = torch.utils.data.Subset(test_dataset, range(subset_size))
+    
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Compute BLEU score
     compute_bleu_score(model, test_dataloader, tokenizer, device)
@@ -364,7 +516,8 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss(ignore_index=0)  # Ignore padding index
     compute_perplexity(model, test_dataloader, criterion, device)
 
-    prompt = "Which do you prefer? Dogs or cats? I prefer "
-    generated_tokens = model.prompt(prompt, max_seq_len=max_seq_length)
+    prompt = "Which do you prefer? Dogs or cats? "
+    generated_tokens = model.prompt(prompt, max_seq_len=max_seq_length, temperature=1)
+    print(generated_tokens)
     generated_text = tokenizer.decode(generated_tokens)
-    print("Generated Text:", generated_text)
+    print(f"Generated Text: '{generated_text}'")
